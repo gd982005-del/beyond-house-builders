@@ -188,7 +188,7 @@ export default function About() {
               <div className="aspect-[4/5] overflow-hidden rounded-lg">
                 <img
                   src={directorImg}
-                  alt="Daniel Ochien - Director"
+                  alt="Daniel Ochieng - Director"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -205,7 +205,7 @@ export default function About() {
                 Meet Our Director
               </span>
               <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground mb-4">
-                Daniel Ochien
+                Daniel Ochieng
               </h2>
               <p className="text-lg text-gold mb-6">Founder & Director</p>
               <div className="space-y-4 text-muted-foreground mb-8">
