@@ -26,6 +26,7 @@ import kitchenImg from "@/assets/portfolio/kitchen-1.jpg";
 import bedroomImg from "@/assets/portfolio/bedroom-1.jpg";
 import wardrobeImg from "@/assets/portfolio/wardrobe-1.jpg";
 import kitchen2Img from "@/assets/portfolio/kitchen-2.jpg";
+import directorImg from "@/assets/director.jpg";
 
 const services = [
   {
@@ -272,6 +273,59 @@ export default function Index() {
             {testimonials.map((testimonial) => (
               <TestimonialCard key={testimonial.name} {...testimonial} />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Director Section */}
+      <section className="section-padding bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="relative"
+            >
+              <div className="aspect-[4/5] overflow-hidden rounded-lg">
+                <img
+                  src={directorImg}
+                  alt="Dancan Odhiambo - Director"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-gold rounded-lg -z-10" />
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <span className="inline-block text-gold font-medium text-sm tracking-wider uppercase mb-3">
+                Meet Our Director
+              </span>
+              <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground mb-4">
+                Dancan Odhiambo
+              </h2>
+              <p className="text-lg text-gold mb-6">Founder & Director</p>
+              <div className="space-y-4 text-muted-foreground mb-8">
+                <p>
+                  With years of experience in interior construction and design, Dancan founded Beyond House with a vision to deliver exceptional quality and innovative designs to every client.
+                </p>
+                <p>
+                  His hands-on approach and attention to detail ensure that every project meets the highest standards of craftsmanship. Under his leadership, Beyond House has completed over 100 successful projects across Kenya.
+                </p>
+              </div>
+              <Button variant="elegant" size="lg" asChild>
+                <Link to="/contact">
+                  Get in Touch
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </Button>
+            </motion.div>
           </div>
         </div>
       </section>
