@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, Phone } from "lucide-react";
+import { Menu, X, Phone, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -16,6 +17,7 @@ const navLinks = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -59,9 +61,16 @@ export function Header() {
               <Phone className="h-4 w-4" />
               0791 996448
             </a>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/auth">Sign In</Link>
-            </Button>
+            {user ? (
+              <Button variant="outline" size="sm" onClick={() => signOut()}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
             <Button variant="gold" size="lg" asChild>
               <Link to="/contact">Get Quote</Link>
             </Button>
@@ -102,11 +111,21 @@ export function Header() {
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-border">
-                <a href="tel:+254791996448" className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <div className="pt-4 border-t border-border flex flex-col gap-3">
+                <a href="tel:+254791996448" className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Phone className="h-4 w-4" />
                   0791 996448
                 </a>
+                {user ? (
+                  <Button variant="outline" className="w-full" onClick={() => { signOut(); setIsOpen(false); }}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>Sign In</Link>
+                  </Button>
+                )}
                 <Button variant="gold" className="w-full" asChild>
                   <Link to="/contact" onClick={() => setIsOpen(false)}>Get Quote</Link>
                 </Button>
