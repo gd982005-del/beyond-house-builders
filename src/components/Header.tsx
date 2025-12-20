@@ -59,6 +59,9 @@ export function Header() {
               <Phone className="h-4 w-4" />
               0791 996448
             </a>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/auth">Sign In</Link>
+            </Button>
             <Button variant="gold" size="lg" asChild>
               <Link to="/contact">Get Quote</Link>
             </Button>

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute";
+import { ChatBot } from "@/components/ChatBot";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -18,6 +19,8 @@ import AdminSettings from "./pages/admin/Settings";
 import ServicesManager from "./pages/admin/ServicesManager";
 import TestimonialsManager from "./pages/admin/TestimonialsManager";
 import PortfolioManager from "./pages/admin/PortfolioManager";
+import HomePageManager from "./pages/admin/HomePageManager";
+import AboutPageManager from "./pages/admin/AboutPageManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,8 +47,11 @@ const App = () => (
             <Route path="/admin/services" element={<ProtectedRoute requireAdmin><ServicesManager /></ProtectedRoute>} />
             <Route path="/admin/testimonials" element={<ProtectedRoute requireAdmin><TestimonialsManager /></ProtectedRoute>} />
             <Route path="/admin/portfolio" element={<ProtectedRoute requireAdmin><PortfolioManager /></ProtectedRoute>} />
+            <Route path="/admin/home-page" element={<ProtectedRoute requireAdmin><HomePageManager /></ProtectedRoute>} />
+            <Route path="/admin/about-page" element={<ProtectedRoute requireAdmin><AboutPageManager /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <ChatBot />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
