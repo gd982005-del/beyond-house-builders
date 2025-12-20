@@ -23,8 +23,8 @@ interface AdminLayoutProps {
 
 const navItems = [
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/admin/home', icon: Home, label: 'Home Page' },
-  { path: '/admin/about', icon: Info, label: 'About Page' },
+  { path: '/admin/home-page', icon: Home, label: 'Home Page' },
+  { path: '/admin/about-page', icon: Info, label: 'About Page' },
   { path: '/admin/services', icon: Wrench, label: 'Services' },
   { path: '/admin/portfolio', icon: Image, label: 'Portfolio' },
   { path: '/admin/testimonials', icon: MessageSquare, label: 'Testimonials' },
