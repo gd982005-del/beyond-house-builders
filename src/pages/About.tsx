@@ -1,12 +1,16 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { SectionHeader } from "@/components/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Target, Eye, Heart } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { usePageContent } from "@/hooks/usePageContent";
 
 import bedroomImg from "@/assets/portfolio/bedroom-1.jpg";
-const values = [
+
+const defaultValues = [
   {
     icon: Target,
     title: "Excellence",
@@ -24,7 +28,31 @@ const values = [
   },
 ];
 
+interface AboutContent {
+  hero_title?: string;
+  hero_subtitle?: string;
+  story_title?: string;
+  story_content?: string;
+  mission?: string;
+  vision?: string;
+}
+
 export default function About() {
+  const { content: pageContent, isLoading } = usePageContent('about');
+  const [content, setContent] = useState<AboutContent>({});
+
+  useEffect(() => {
+    if (pageContent.length > 0) {
+      const contentMap: AboutContent = {};
+      pageContent.forEach(item => {
+        if (item.content_key && item.content_value) {
+          contentMap[item.content_key as keyof AboutContent] = item.content_value;
+        }
+      });
+      setContent(contentMap);
+    }
+  }, [pageContent]);
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -40,10 +68,10 @@ export default function About() {
               About Us
             </span>
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6">
-              Crafting Beautiful Spaces Since Day One
+              {content.hero_title || 'Crafting Beautiful Spaces Since Day One'}
             </h1>
             <p className="text-lg text-muted-foreground">
-              Beyond House Interior Construction & Consultancy is dedicated to transforming living and working spaces into extraordinary environments that inspire and delight.
+              {content.hero_subtitle || 'Beyond House Interior Construction & Consultancy is dedicated to transforming living and working spaces into extraordinary environments that inspire and delight.'}
             </p>
           </motion.div>
         </div>
@@ -63,18 +91,26 @@ export default function About() {
                 Our Story
               </span>
               <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground mb-6">
-                Building Dreams, One Space at a Time
+                {content.story_title || 'Building Dreams, One Space at a Time'}
               </h2>
               <div className="space-y-4 text-muted-foreground">
-                <p>
-                  Founded with a passion for transforming spaces, Beyond House Interior Construction & Consultancy has grown to become a trusted name in Kenya's interior design industry.
-                </p>
-                <p>
-                  Our journey began with a simple belief: that every space has the potential to be extraordinary. Today, we continue to bring that vision to life for homeowners and businesses across Nairobi and beyond.
-                </p>
-                <p>
-                  With a dedicated team of skilled craftsmen and creative designers, we specialize in ceiling designs, custom cabinetry, wall treatments, and premium flooring solutions. Every project is an opportunity to exceed expectations and create spaces that our clients love.
-                </p>
+                {content.story_content ? (
+                  content.story_content.split('\n').map((paragraph, idx) => (
+                    <p key={idx}>{paragraph}</p>
+                  ))
+                ) : (
+                  <>
+                    <p>
+                      Founded with a passion for transforming spaces, Beyond House Interior Construction & Consultancy has grown to become a trusted name in Kenya's interior design industry.
+                    </p>
+                    <p>
+                      Our journey began with a simple belief: that every space has the potential to be extraordinary. Today, we continue to bring that vision to life for homeowners and businesses across Nairobi and beyond.
+                    </p>
+                    <p>
+                      With a dedicated team of skilled craftsmen and creative designers, we specialize in ceiling designs, custom cabinetry, wall treatments, and premium flooring solutions. Every project is an opportunity to exceed expectations and create spaces that our clients love.
+                    </p>
+                  </>
+                )}
               </div>
             </motion.div>
             
@@ -115,7 +151,7 @@ export default function About() {
               </div>
               <h3 className="font-display text-2xl font-semibold mb-4">Our Mission</h3>
               <p className="text-beige/80 leading-relaxed">
-                To deliver exceptional interior construction and consultancy services that transform ordinary spaces into extraordinary environments, while maintaining the highest standards of quality, creativity, and client satisfaction.
+                {content.mission || 'To deliver exceptional interior construction and consultancy services that transform ordinary spaces into extraordinary environments, while maintaining the highest standards of quality, creativity, and client satisfaction.'}
               </p>
             </motion.div>
             
@@ -131,7 +167,7 @@ export default function About() {
               </div>
               <h3 className="font-display text-2xl font-semibold mb-4">Our Vision</h3>
               <p className="text-beige/80 leading-relaxed">
-                To be the leading interior construction and consultancy firm in East Africa, recognized for our innovative designs, exceptional craftsmanship, and unwavering commitment to transforming spaces beyond imagination.
+                {content.vision || 'To be the leading interior construction and consultancy firm in East Africa, recognized for our innovative designs, exceptional craftsmanship, and unwavering commitment to transforming spaces beyond imagination.'}
               </p>
             </motion.div>
           </div>
@@ -148,7 +184,7 @@ export default function About() {
           />
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {values.map((value, index) => (
+            {defaultValues.map((value, index) => (
               <motion.div
                 key={value.title}
                 initial={{ opacity: 0, y: 20 }}
@@ -171,7 +207,6 @@ export default function About() {
           </div>
         </div>
       </section>
-
 
       {/* CTA Section */}
       <section className="py-20 bg-beige">

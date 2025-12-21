@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import {
   Dialog,
   DialogContent,
@@ -76,7 +77,7 @@ export default function PortfolioManager() {
     if (!selectedItem || !selectedItem.image_url) {
       toast({
         title: 'Error',
-        description: 'Image URL is required',
+        description: 'Image is required',
         variant: 'destructive',
       });
       return;
@@ -233,7 +234,7 @@ export default function PortfolioManager() {
 
         {/* Edit Dialog */}
         <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {isCreating ? 'Add Portfolio Item' : 'Edit Portfolio Item'}
@@ -241,6 +242,13 @@ export default function PortfolioManager() {
             </DialogHeader>
             {selectedItem && (
               <div className="space-y-4">
+                <ImageUpload
+                  value={selectedItem.image_url || ''}
+                  onChange={(url) => setSelectedItem({ ...selectedItem, image_url: url })}
+                  folder="portfolio"
+                  label="Project Image"
+                />
+
                 <div>
                   <Label htmlFor="title">Title</Label>
                   <Input
@@ -271,18 +279,6 @@ export default function PortfolioManager() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="image_url">Image URL</Label>
-                  <Input
-                    id="image_url"
-                    value={selectedItem.image_url || ''}
-                    onChange={(e) =>
-                      setSelectedItem({ ...selectedItem, image_url: e.target.value })
-                    }
-                    placeholder="https://..."
-                  />
                 </div>
 
                 <div>
@@ -321,17 +317,12 @@ export default function PortfolioManager() {
                 </div>
 
                 {selectedItem.is_before_after && (
-                  <div>
-                    <Label htmlFor="before_image_url">Before Image URL</Label>
-                    <Input
-                      id="before_image_url"
-                      value={selectedItem.before_image_url || ''}
-                      onChange={(e) =>
-                        setSelectedItem({ ...selectedItem, before_image_url: e.target.value })
-                      }
-                      placeholder="https://..."
-                    />
-                  </div>
+                  <ImageUpload
+                    value={selectedItem.before_image_url || ''}
+                    onChange={(url) => setSelectedItem({ ...selectedItem, before_image_url: url })}
+                    folder="portfolio"
+                    label="Before Image"
+                  />
                 )}
 
                 <div className="flex gap-2 pt-4">

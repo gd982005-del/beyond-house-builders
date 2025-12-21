@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { SectionHeader } from "@/components/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, Layers, DoorOpen, Palette, Square } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 import ceilingImg from "@/assets/portfolio/ceiling-1.jpg";
 import cabinetryImg from "@/assets/portfolio/cabinetry-1.jpg";
@@ -12,72 +14,69 @@ import wallsImg from "@/assets/portfolio/walls-1.jpg";
 import tilesImg from "@/assets/portfolio/tiles-1.jpg";
 import kitchenImg from "@/assets/portfolio/kitchen-1.jpg";
 
-const services = [
-  {
-    id: "ceiling",
-    title: "Ceiling Design",
-    subtitle: "Elevate Your Space",
-    description: "Transform your rooms with stunning ceiling designs that add depth, character, and modern elegance. Our expert craftsmen create custom ceiling solutions that become the focal point of any space.",
-    image: ceilingImg,
-    features: [
-      "Custom gypsum ceiling designs",
-      "LED strip and cove lighting integration",
-      "Geometric and architectural patterns",
-      "Coffered and tray ceiling designs",
-      "Sound-absorbing acoustic ceilings",
-      "Professional installation and finishing",
-    ],
-  },
-  {
-    id: "cabinetry",
-    title: "Custom Cabinetry",
-    subtitle: "Storage Solutions Redefined",
-    description: "From kitchen cabinets to wardrobes, we design and build custom storage solutions that maximize space while adding beauty to your home. Every piece is crafted with precision and built to last.",
-    image: cabinetryImg,
-    secondaryImage: wardrobeImg,
-    features: [
-      "Custom kitchen cabinets",
-      "Built-in wardrobes and closets",
-      "Bathroom vanities and storage",
-      "Entertainment centers and shelving",
-      "Office and study furniture",
-      "Premium hardware and finishes",
-    ],
-  },
-  {
-    id: "walls",
-    title: "Walls & Décor",
-    subtitle: "Express Your Style",
-    description: "Create stunning accent walls and decorative finishes that reflect your personality. We specialize in a variety of wall treatments from wood paneling to textured finishes that transform ordinary walls into works of art.",
-    image: wallsImg,
-    features: [
-      "Wood slat and panel walls",
-      "PVC and WPC wall panels",
-      "Textured paint finishes",
-      "Decorative molding and trim",
-      "Accent wall designs",
-      "Mirror and glass installations",
-    ],
-  },
-  {
-    id: "floors",
-    title: "Floors & Tiles",
-    subtitle: "Foundation of Beauty",
-    description: "The right flooring sets the foundation for your entire interior design. We offer expert installation of premium tiles, wooden floors, and various flooring solutions that combine durability with aesthetic appeal.",
-    image: tilesImg,
-    secondaryImage: kitchenImg,
-    features: [
-      "Ceramic and porcelain tiles",
-      "Marble and granite flooring",
-      "Engineered and solid hardwood",
-      "Vinyl and laminate options",
-      "Bathroom and kitchen tiling",
-      "Professional grouting and finishing",
-    ],
-  },
-];
+const fallbackImages: Record<string, string> = {
+  'ceiling-design': ceilingImg,
+  'cabinetry': cabinetryImg,
+  'walls-decor': wallsImg,
+  'floors-tiles': tilesImg,
+};
+
+const secondaryImages: Record<string, string> = {
+  'cabinetry': wardrobeImg,
+  'floors-tiles': kitchenImg,
+};
+
+interface Service {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  benefits: unknown[] | null;
+  image_url: string | null;
+}
 
 export default function Services() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('services')
+          .select('id, title, slug, description, benefits, image_url')
+          .eq('is_visible', true)
+          .order('display_order');
+
+        if (error) throw error;
+        
+        // Parse benefits if they're stored as JSON
+        const parsedServices = (data || []).map(service => ({
+          ...service,
+          benefits: Array.isArray(service.benefits) ? service.benefits : []
+        }));
+        
+        setServices(parsedServices);
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  const getSubtitle = (slug: string): string => {
+    const subtitles: Record<string, string> = {
+      'ceiling-design': 'Elevate Your Space',
+      'cabinetry': 'Storage Solutions Redefined',
+      'walls-decor': 'Express Your Style',
+      'floors-tiles': 'Foundation of Beauty',
+    };
+    return subtitles[slug] || 'Premium Service';
+  };
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -106,7 +105,7 @@ export default function Services() {
       {services.map((service, index) => (
         <section
           key={service.id}
-          id={service.id}
+          id={service.slug}
           className={`section-padding ${index % 2 === 0 ? "bg-background" : "bg-muted"}`}
         >
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,7 +121,7 @@ export default function Services() {
                 className={index % 2 === 1 ? "lg:order-2" : ""}
               >
                 <span className="inline-block text-gold font-medium text-sm tracking-wider uppercase mb-3">
-                  {service.subtitle}
+                  {getSubtitle(service.slug)}
                 </span>
                 <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground mb-6">
                   {service.title}
@@ -131,16 +130,18 @@ export default function Services() {
                   {service.description}
                 </p>
                 
-                <ul className="space-y-3 mb-8">
-                  {service.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="h-3 w-3 text-gold" />
-                      </div>
-                      <span className="text-muted-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                {service.benefits && service.benefits.length > 0 && (
+                  <ul className="space-y-3 mb-8">
+                    {service.benefits.map((benefit, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center shrink-0 mt-0.5">
+                          <Check className="h-3 w-3 text-gold" />
+                        </div>
+                        <span className="text-muted-foreground">{String(benefit)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 
                 <Button variant="gold" size="lg" asChild>
                   <Link to="/contact">
@@ -160,13 +161,13 @@ export default function Services() {
               >
                 <div className="relative">
                   <img
-                    src={service.image}
+                    src={service.image_url || fallbackImages[service.slug] || ceilingImg}
                     alt={service.title}
                     className="w-full rounded-lg shadow-elegant"
                   />
-                  {service.secondaryImage && (
+                  {secondaryImages[service.slug] && (
                     <img
-                      src={service.secondaryImage}
+                      src={secondaryImages[service.slug]}
                       alt={`${service.title} secondary`}
                       className="absolute -bottom-8 -right-8 w-1/2 rounded-lg shadow-lg border-4 border-background hidden md:block"
                     />
