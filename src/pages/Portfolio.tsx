@@ -1,38 +1,58 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
-import ceilingImg from "@/assets/portfolio/ceiling-1.jpg";
-import cabinetryImg from "@/assets/portfolio/cabinetry-1.jpg";
-import wardrobeImg from "@/assets/portfolio/wardrobe-1.jpg";
-import wallsImg from "@/assets/portfolio/walls-1.jpg";
-import tilesImg from "@/assets/portfolio/tiles-1.jpg";
-import kitchenImg from "@/assets/portfolio/kitchen-1.jpg";
-import kitchen2Img from "@/assets/portfolio/kitchen-2.jpg";
-import bedroomImg from "@/assets/portfolio/bedroom-1.jpg";
-
-const categories = ["All", "Ceiling", "Cabinetry", "Walls", "Floors"];
-
-const projects = [
-  { id: 1, src: ceilingImg, alt: "Modern ceiling design with LED lighting", category: "Ceiling" },
-  { id: 2, src: cabinetryImg, alt: "Custom wardrobe with shelving", category: "Cabinetry" },
-  { id: 3, src: kitchenImg, alt: "Modern kitchen cabinets", category: "Cabinetry" },
-  { id: 4, src: kitchen2Img, alt: "L-shaped kitchen design", category: "Cabinetry" },
-  { id: 5, src: wallsImg, alt: "Wood slat wall with LED accent", category: "Walls" },
-  { id: 6, src: bedroomImg, alt: "Elegant bedroom wall design", category: "Walls" },
-  { id: 7, src: tilesImg, alt: "Marble tile bathroom", category: "Floors" },
-  { id: 8, src: wardrobeImg, alt: "Built-in wardrobe with mirror", category: "Cabinetry" },
-];
+interface PortfolioItem {
+  id: string;
+  image_url: string;
+  title: string | null;
+  category: string | null;
+  hover_caption: string | null;
+}
 
 export default function Portfolio() {
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
   const [activeCategory, setActiveCategory] = useState("All");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPortfolio = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('portfolio')
+          .select('id, image_url, title, category, hover_caption')
+          .eq('is_visible', true)
+          .order('display_order');
+
+        if (error) throw error;
+        
+        setPortfolio(data || []);
+        
+        // Extract unique categories
+        const uniqueCategories = ['All', ...new Set(
+          (data || [])
+            .map(item => item.category)
+            .filter((cat): cat is string => cat !== null && cat !== '')
+        )];
+        setCategories(uniqueCategories);
+      } catch (error) {
+        console.error('Error fetching portfolio:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPortfolio();
+  }, []);
 
   const filteredProjects = activeCategory === "All"
-    ? projects
-    : projects.filter((project) => project.category === activeCategory);
+    ? portfolio
+    : portfolio.filter((project) => project.category === activeCategory);
 
   return (
     <Layout>
@@ -78,40 +98,45 @@ export default function Portfolio() {
             ))}
           </div>
 
-          {/* Gallery Grid */}
-          <motion.div
-            layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-          >
-            {filteredProjects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                className="group relative aspect-square overflow-hidden rounded-lg cursor-pointer"
-                onClick={() => setSelectedImage(project.src)}
-              >
-                <img
-                  src={project.src}
-                  alt={project.alt}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-charcoal/0 group-hover:bg-charcoal/60 transition-all duration-300 flex items-center justify-center">
-                  <div className="text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
-                    <span className="inline-block bg-gold text-charcoal px-4 py-2 rounded-full text-sm font-medium">
-                      {project.category}
-                    </span>
-                    <p className="text-beige-light mt-3 text-sm px-4">
-                      {project.alt}
-                    </p>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold" />
+            </div>
+          ) : (
+            <motion.div
+              layout
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+              {filteredProjects.map((project, index) => (
+                <motion.div
+                  key={project.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  className="group relative aspect-square overflow-hidden rounded-lg cursor-pointer"
+                  onClick={() => setSelectedImage(project.image_url)}
+                >
+                  <img
+                    src={project.image_url}
+                    alt={project.title || 'Portfolio project'}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-charcoal/0 group-hover:bg-charcoal/60 transition-all duration-300 flex items-center justify-center">
+                    <div className="text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                      <span className="inline-block bg-gold text-charcoal px-4 py-2 rounded-full text-sm font-medium">
+                        {project.category || 'Project'}
+                      </span>
+                      <p className="text-beige-light mt-3 text-sm px-4">
+                        {project.hover_caption || project.title || 'View Project'}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </div>
       </section>
 

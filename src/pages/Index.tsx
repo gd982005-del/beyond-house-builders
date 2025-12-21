@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ServiceCard } from "@/components/ServiceCard";
 import { TestimonialCard } from "@/components/TestimonialCard";
 import { SectionHeader } from "@/components/SectionHeader";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   ArrowRight, 
   Layers, 
@@ -18,46 +20,27 @@ import {
 } from "lucide-react";
 
 import heroImage from "@/assets/hero-interior.jpg";
+import directorImg from "@/assets/director.jpg";
+
+// Fallback images
 import ceilingImg from "@/assets/portfolio/ceiling-1.jpg";
 import cabinetryImg from "@/assets/portfolio/cabinetry-1.jpg";
 import wallsImg from "@/assets/portfolio/walls-1.jpg";
 import tilesImg from "@/assets/portfolio/tiles-1.jpg";
-import kitchenImg from "@/assets/portfolio/kitchen-1.jpg";
-import bedroomImg from "@/assets/portfolio/bedroom-1.jpg";
-import wardrobeImg from "@/assets/portfolio/wardrobe-1.jpg";
-import kitchen2Img from "@/assets/portfolio/kitchen-2.jpg";
-import directorImg from "@/assets/director.jpg";
 
-const services = [
-  {
-    title: "Ceiling Design",
-    description: "Transform your space with stunning ceiling designs featuring LED lighting, gypsum work, and modern architectural elements.",
-    icon: Layers,
-    image: ceilingImg,
-    href: "/services#ceiling",
-  },
-  {
-    title: "Cabinetry",
-    description: "Custom-built wardrobes, kitchen cabinets, and storage solutions designed to maximize space and style.",
-    icon: DoorOpen,
-    image: cabinetryImg,
-    href: "/services#cabinetry",
-  },
-  {
-    title: "Walls & Décor",
-    description: "Beautiful wall treatments including wood paneling, textures, accent walls, and decorative finishes.",
-    icon: Palette,
-    image: wallsImg,
-    href: "/services#walls",
-  },
-  {
-    title: "Floors & Tiles",
-    description: "Premium flooring solutions from elegant tiles to wooden floors, transforming the foundation of your space.",
-    icon: Square,
-    image: tilesImg,
-    href: "/services#floors",
-  },
-];
+const serviceIcons: Record<string, typeof Layers> = {
+  'ceiling-design': Layers,
+  'cabinetry': DoorOpen,
+  'walls-decor': Palette,
+  'floors-tiles': Square,
+};
+
+const fallbackImages: Record<string, string> = {
+  'ceiling-design': ceilingImg,
+  'cabinetry': cabinetryImg,
+  'walls-decor': wallsImg,
+  'floors-tiles': tilesImg,
+};
 
 const features = [
   {
@@ -82,35 +65,56 @@ const features = [
   },
 ];
 
-const testimonials = [
-  {
-    name: "Sarah Wanjiku",
-    role: "Homeowner, Karen",
-    content: "Beyond House transformed our living room beyond our expectations. The ceiling design and custom cabinets are absolutely stunning. Highly recommend their services!",
-    rating: 5,
-  },
-  {
-    name: "James Omondi",
-    role: "Property Developer",
-    content: "Professional, reliable, and creative. They've completed multiple projects for us and the quality is consistently excellent. Our clients love the finished spaces.",
-    rating: 5,
-  },
-  {
-    name: "Grace Muthoni",
-    role: "Homeowner, Kileleshwa",
-    content: "The team was incredibly patient with our design requests. The kitchen remodel exceeded our expectations. Beautiful work and great attention to detail.",
-    rating: 5,
-  },
-];
+interface Service {
+  id: string;
+  title: string;
+  description: string | null;
+  slug: string;
+  image_url: string | null;
+}
 
-const portfolioImages = [
-  { src: kitchenImg, alt: "Modern kitchen design" },
-  { src: bedroomImg, alt: "Elegant bedroom interior" },
-  { src: wardrobeImg, alt: "Custom wardrobe" },
-  { src: kitchen2Img, alt: "Contemporary kitchen" },
-];
+interface Testimonial {
+  id: string;
+  client_name: string;
+  client_role: string | null;
+  content: string;
+  rating: number | null;
+}
+
+interface PortfolioItem {
+  id: string;
+  image_url: string;
+  title: string | null;
+}
 
 export default function Index() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [servicesRes, testimonialsRes, portfolioRes] = await Promise.all([
+          supabase.from('services').select('id, title, description, slug, image_url').eq('is_visible', true).order('display_order').limit(4),
+          supabase.from('testimonials').select('id, client_name, client_role, content, rating').eq('is_visible', true).order('display_order').limit(3),
+          supabase.from('portfolio').select('id, image_url, title').eq('is_visible', true).order('display_order').limit(4),
+        ]);
+
+        if (servicesRes.data) setServices(servicesRes.data);
+        if (testimonialsRes.data) setTestimonials(testimonialsRes.data);
+        if (portfolioRes.data) setPortfolioItems(portfolioRes.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -179,7 +183,14 @@ export default function Index() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.map((service) => (
-              <ServiceCard key={service.title} {...service} />
+              <ServiceCard 
+                key={service.id} 
+                title={service.title}
+                description={service.description || ''}
+                icon={serviceIcons[service.slug] || Layers}
+                image={service.image_url || fallbackImages[service.slug] || ceilingImg}
+                href={`/services#${service.slug}`}
+              />
             ))}
           </div>
         </div>
@@ -230,9 +241,9 @@ export default function Index() {
           />
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-            {portfolioImages.map((image, index) => (
+            {portfolioItems.map((item, index) => (
               <motion.div
-                key={index}
+                key={item.id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -240,8 +251,8 @@ export default function Index() {
                 className="relative aspect-square overflow-hidden rounded-lg group"
               >
                 <img
-                  src={image.src}
-                  alt={image.alt}
+                  src={item.image_url}
+                  alt={item.title || 'Portfolio project'}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-charcoal/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -271,7 +282,13 @@ export default function Index() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((testimonial) => (
-              <TestimonialCard key={testimonial.name} {...testimonial} />
+              <TestimonialCard 
+                key={testimonial.id} 
+                name={testimonial.client_name}
+                role={testimonial.client_role || ''}
+                content={testimonial.content}
+                rating={testimonial.rating || 5}
+              />
             ))}
           </div>
         </div>

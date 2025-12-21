@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,7 @@ export default function ServicesManager() {
           title: selectedService.title,
           description: selectedService.description,
           benefits: benefitsArray,
+          image_url: selectedService.image_url,
           is_visible: selectedService.is_visible,
         })
         .eq('id', selectedService.id);
@@ -157,6 +159,14 @@ export default function ServicesManager() {
             >
               <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
               
+              {service.image_url && (
+                <img 
+                  src={service.image_url} 
+                  alt={service.title}
+                  className="w-16 h-16 rounded-lg object-cover"
+                />
+              )}
+              
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="font-display text-lg font-semibold text-foreground">
@@ -193,12 +203,21 @@ export default function ServicesManager() {
 
         {/* Edit Dialog */}
         <Dialog open={!!selectedService} onOpenChange={() => setSelectedService(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Service</DialogTitle>
             </DialogHeader>
             {selectedService && (
               <div className="space-y-4">
+                <ImageUpload
+                  value={selectedService.image_url || ''}
+                  onChange={(url) =>
+                    setSelectedService({ ...selectedService, image_url: url })
+                  }
+                  folder="services"
+                  label="Service Image"
+                />
+
                 <div>
                   <Label htmlFor="title">Service Title</Label>
                   <Input
