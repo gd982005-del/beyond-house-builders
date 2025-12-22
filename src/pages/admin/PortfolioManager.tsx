@@ -20,12 +20,106 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Save, ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, ImageIcon, GripVertical } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type Portfolio = Database['public']['Tables']['portfolio']['Row'];
 
 const categories = ['Ceiling', 'Cabinetry', 'Walls', 'Flooring', 'Kitchen', 'Bedroom', 'Living Room'];
+
+function SortablePortfolioItem({ 
+  item, 
+  onEdit, 
+  onDelete 
+}: { 
+  item: Portfolio; 
+  onEdit: (item: Portfolio) => void; 
+  onDelete: (id: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-card rounded-lg border border-border overflow-hidden group"
+    >
+      <div className="aspect-square relative">
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 right-2 z-10 bg-black/50 p-1.5 rounded cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4 text-white" />
+        </div>
+        {item.image_url ? (
+          <img
+            src={item.image_url}
+            alt={item.title || 'Portfolio image'}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            <ImageIcon className="h-12 w-12 text-muted-foreground" />
+          </div>
+        )}
+        {!item.is_visible && (
+          <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+            Hidden
+          </div>
+        )}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          <Button size="sm" variant="secondary" onClick={() => onEdit(item)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onDelete(item.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="p-3">
+        <p className="font-medium text-foreground truncate">
+          {item.title || 'Untitled'}
+        </p>
+        <p className="text-sm text-muted-foreground">{item.category || 'No category'}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function PortfolioManager() {
   const [portfolio, setPortfolio] = useState<Portfolio[]>([]);
@@ -34,6 +128,13 @@ export default function PortfolioManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     fetchPortfolio();
@@ -52,6 +153,43 @@ export default function PortfolioManager() {
       console.error('Error fetching portfolio:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = portfolio.findIndex(item => item.id === active.id);
+    const newIndex = portfolio.findIndex(item => item.id === over.id);
+
+    const newOrder = arrayMove(portfolio, oldIndex, newIndex);
+    setPortfolio(newOrder);
+
+    // Update display_order in database
+    try {
+      const updates = newOrder.map((item, index) => ({
+        id: item.id,
+        display_order: index,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from('portfolio')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+      }
+
+      toast({ title: 'Order updated' });
+    } catch (error) {
+      console.error('Error updating order:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update order',
+        variant: 'destructive',
+      });
+      fetchPortfolio(); // Revert on error
     }
   };
 
@@ -177,7 +315,7 @@ export default function PortfolioManager() {
               Portfolio
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage project gallery images
+              Manage project gallery images. Drag to reorder.
             </p>
           </div>
           <Button onClick={() => openEditor()} variant="gold">
@@ -186,51 +324,27 @@ export default function PortfolioManager() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {portfolio.map((item) => (
-            <div
-              key={item.id}
-              className="bg-card rounded-lg border border-border overflow-hidden group"
-            >
-              <div className="aspect-square relative">
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={item.title || 'Portfolio image'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-muted flex items-center justify-center">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                  </div>
-                )}
-                {!item.is_visible && (
-                  <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                    Hidden
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => openEditor(item)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => deleteItem(item.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="p-3">
-                <p className="font-medium text-foreground truncate">
-                  {item.title || 'Untitled'}
-                </p>
-                <p className="text-sm text-muted-foreground">{item.category || 'No category'}</p>
-              </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={portfolio.map(p => p.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {portfolio.map((item) => (
+                <SortablePortfolioItem
+                  key={item.id}
+                  item={item}
+                  onEdit={openEditor}
+                  onDelete={deleteItem}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
 
         {/* Edit Dialog */}
         <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
