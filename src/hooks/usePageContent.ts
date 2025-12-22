@@ -34,7 +34,7 @@ export function usePageContent(page: string) {
   };
 
   return {
-    content,
+    content: content ?? [],
     isLoading,
     error,
     getContentValue,
