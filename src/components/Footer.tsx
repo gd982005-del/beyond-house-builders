@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
+import { Phone, Mail, MapPin, MessageCircle, Facebook, Instagram } from "lucide-react";
 
 const quickLinks = [
   { name: "Home", path: "/" },
@@ -8,6 +8,19 @@ const quickLinks = [
   { name: "Portfolio", path: "/portfolio" },
   { name: "Consultancy", path: "/consultancy" },
   { name: "Contact", path: "/contact" },
+];
+
+const socialLinks = [
+  { 
+    name: "Facebook", 
+    url: "https://www.facebook.com/share/1JEpFYhzB5/", 
+    icon: Facebook 
+  },
+  { 
+    name: "Instagram", 
+    url: "https://www.instagram.com/beyondhouse_?igsh=MWRxeGJvZ3k3cmI5dQ==", 
+    icon: Instagram 
+  },
 ];
 
 const services = [
@@ -49,6 +62,22 @@ export function Footer() {
               <MessageCircle className="h-5 w-5" />
               Chat on WhatsApp
             </a>
+            
+            {/* Social Media Links */}
+            <div className="flex gap-4 mt-4">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-beige/10 hover:bg-gold hover:text-charcoal rounded-full flex items-center justify-center transition-colors"
+                  aria-label={social.name}
+                >
+                  <social.icon className="h-5 w-5" />
+                </a>
+              ))}
+            </div>
           </div>
 
           {/* Quick Links */}
